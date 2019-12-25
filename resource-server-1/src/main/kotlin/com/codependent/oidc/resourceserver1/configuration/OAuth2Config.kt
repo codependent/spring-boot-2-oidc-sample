@@ -27,10 +27,10 @@ class OAuth2Config {
 
     @Bean
     fun clientRegistrationRepository(): ClientRegistrationRepository {
-        return InMemoryClientRegistrationRepository(googleClientRegistration())
+        return InMemoryClientRegistrationRepository(keycloakClientRegistration())
     }
 
-    private fun googleClientRegistration(): ClientRegistration {
+    private fun keycloakClientRegistration(): ClientRegistration {
         return ClientRegistration.withRegistrationId("keycloak")
                 .clientId("resource-server-1")
                 .clientSecret("c00670cc-8546-4d5f-946e-2a0e998b9d7f")
