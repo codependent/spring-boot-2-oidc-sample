@@ -12,6 +12,8 @@ import org.springframework.security.oauth2.client.registration.InMemoryClientReg
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
+import org.springframework.security.oauth2.jwt.JwtDecoder
+import org.springframework.security.oauth2.jwt.JwtDecoders
 import org.springframework.security.oauth2.server.resource.web.reactive.function.client.ServletBearerExchangeFilterFunction
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.web.reactive.function.client.WebClient
@@ -34,6 +36,11 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
     @Bean
     fun clientRegistrationRepository(): ClientRegistrationRepository {
         return InMemoryClientRegistrationRepository(keycloakClientRegistration())
+    }
+
+    @Bean
+    fun jwtDecoder(): JwtDecoder {
+        return JwtDecoders.fromIssuerLocation("http://localhost:8080/auth/realms/insight")
     }
 
     private fun keycloakClientRegistration(): ClientRegistration {
@@ -63,6 +70,9 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
                 .logout { logout ->
                     logout.logoutSuccessHandler(oidcLogoutSuccessHandler())
                 }
+                .oauth2ResourceServer()
+                .jwt()
+                .decoder(jwtDecoder())
     }
 
     private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler? {

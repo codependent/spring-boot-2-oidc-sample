@@ -2,6 +2,7 @@ package com.codependent.oidc.resourceserver1.controller
 
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import java.security.Principal
 
 /**
  * @author José A. Íñigo
@@ -10,7 +11,8 @@ import org.springframework.web.bind.annotation.RestController
 class HelloRestController {
 
     @GetMapping("/rest/hello")
-    fun hello(): Pair<String, String> {
+    fun hello(principal: Principal): Pair<String, String> {
+        println(principal)
         return Pair("message", "hello from resource server 1")
     }
 }
