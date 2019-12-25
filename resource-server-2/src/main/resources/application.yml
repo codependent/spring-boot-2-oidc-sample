@@ -1,0 +1,14 @@
+server:
+  port: 8282
+  servlet:
+    context-path: /resource-server-2
+
+
+logging:
+  level:
+    org:
+      springframework:
+        security: debug
+        web: debug
+        web.reactive: debug
+

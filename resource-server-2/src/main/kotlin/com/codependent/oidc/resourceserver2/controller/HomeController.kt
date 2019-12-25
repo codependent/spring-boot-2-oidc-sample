@@ -1,4 +1,4 @@
-package com.codependent.oidc.resourceserver1.controller
+package com.codependent.oidc.resourceserver2.controller
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.context.SecurityContextHolder
@@ -23,7 +23,7 @@ class HomeController(private val webClient: WebClient) {
         val authentication = SecurityContextHolder.getContext().authentication
         println(authentication)
 
-        val pair = webClient.get().uri("http://localhost:8282/resource-server-2/rest/hello").retrieve()
+        val pair = webClient.get().uri("http://localhost:8181/resource-server-1/rest/hello").retrieve()
                 .bodyToMono(Pair::class.java)
                 .doOnError { it.printStackTrace() }
                 .block()

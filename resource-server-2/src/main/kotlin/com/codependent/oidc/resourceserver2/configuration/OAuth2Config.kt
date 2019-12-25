@@ -1,8 +1,8 @@
-package com.codependent.oidc.resourceserver1.configuration
+package com.codependent.oidc.resourceserver2.configuration
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.Customizer.withDefaults
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler
@@ -37,10 +37,10 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
     }
 
     private fun keycloakClientRegistration(): ClientRegistration {
-        val clientRegistration = ClientRegistration
-                .withRegistrationId("resource-server-1")
-                .clientId("resource-server-1")
-                .clientSecret("c00670cc-8546-4d5f-946e-2a0e998b9d7f")
+        return ClientRegistration
+                .withRegistrationId("resource-server-2")
+                .clientId("resource-server-2")
+                .clientSecret("e8775c0b-2a5c-4a4c-9aee-db0678c9d59d")
                 .clientAuthenticationMethod(ClientAuthenticationMethod.BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .redirectUriTemplate("{baseUrl}/login/oauth2/code/{registrationId}")
@@ -53,14 +53,13 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
                 .clientName("Keycloak")
                 .providerConfigurationMetadata(mapOf("end_session_endpoint" to "http://localhost:8080/auth/realms/insight/protocol/openid-connect/logout"))
                 .build()
-        return clientRegistration
     }
 
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests { authorizeRequests ->
             authorizeRequests
                     .anyRequest().authenticated()
-        }.oauth2Login(withDefaults())
+        }.oauth2Login(Customizer.withDefaults())
                 .logout { logout ->
                     logout.logoutSuccessHandler(oidcLogoutSuccessHandler())
                 }
@@ -68,7 +67,7 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
 
     private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler? {
         val oidcLogoutSuccessHandler = OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository())
-        oidcLogoutSuccessHandler.setPostLogoutRedirectUri(URI.create("http://localhost:8181/resource-server-1"))
+        oidcLogoutSuccessHandler.setPostLogoutRedirectUri(URI.create("http://localhost:8282/resource-server-2"))
         return oidcLogoutSuccessHandler
     }
 }
