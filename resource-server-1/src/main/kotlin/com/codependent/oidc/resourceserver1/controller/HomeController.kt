@@ -22,6 +22,7 @@ class HomeController(private val webClient: WebClient) {
              @AuthenticationPrincipal oauth2User: OAuth2User): String {
         val authentication = SecurityContextHolder.getContext().authentication
         println(authentication)
+        println(authorizedClient.accessToken.tokenValue)
 
         val pair = webClient.get().uri("http://localhost:8282/resource-server-2/rest/hello").retrieve()
                 .bodyToMono(Pair::class.java)
