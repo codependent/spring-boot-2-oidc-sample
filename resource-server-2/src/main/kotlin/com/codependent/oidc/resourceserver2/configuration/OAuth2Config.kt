@@ -1,5 +1,7 @@
 package com.codependent.oidc.resourceserver2.configuration
 
+import com.codependent.oidc.resourceserver2.client.ServletBearerExchangeFilterFunction
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.Customizer
@@ -9,12 +11,12 @@ import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInit
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtDecoders
-import org.springframework.security.oauth2.server.resource.web.reactive.function.client.ServletBearerExchangeFilterFunction
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.web.reactive.function.client.WebClient
 import java.net.URI
@@ -26,10 +28,15 @@ import java.net.URI
 @Configuration
 class OAuth2Config : WebSecurityConfigurerAdapter() {
 
+    @Autowired
+    lateinit var oAuth2AuthorizedClientRepository: OAuth2AuthorizedClientRepository
+
     @Bean
     fun webClient(): WebClient {
+        val servletBearerExchangeFilterFunction = ServletBearerExchangeFilterFunction("resource-server-2",
+                oAuth2AuthorizedClientRepository)
         return WebClient.builder()
-                .filter(ServletBearerExchangeFilterFunction())
+                .filter(servletBearerExchangeFilterFunction)
                 .build()
     }
 
