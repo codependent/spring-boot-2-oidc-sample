@@ -11,7 +11,10 @@
     <nav class="my-2 my-md-0 mr-md-3">
         <a href="http://localhost:8181/resource-server-1" class="p-2 text-dark">Resource Server 1</a>
     </nav>
-    <a class="btn btn-outline-primary" th:href="@{/logout}">Logout</a>
+    <form id="f" th:action="@{/logout}" method="post" role="form" autocomplete="off">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+        <input type="submit" class="btn btn-outline-primary" th:value="Logout"/>
+    </form>
 </div>
 
 <div class="pricing-header px-3 py-3 pt-md-5 pb-md-4 mx-auto text-center">
