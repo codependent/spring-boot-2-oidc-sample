@@ -1,24 +1,27 @@
 package com.codependent.oidc.resourceserver2.configuration
 
-import com.codependent.oidc.resourceserver2.client.ServletBearerExchangeFilterFunction
+import com.codependent.oidc.resourceserver2.client.ServerBearerExchangeFilterFunction
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.autoconfigure.web.ServerProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.security.config.Customizer
-import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
-import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler
+import org.springframework.security.config.Customizer.withDefaults
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler
 import org.springframework.security.oauth2.client.registration.ClientRegistration
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
-import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository
+import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository
+import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository
+import org.springframework.security.oauth2.client.web.server.ServerOAuth2AuthorizedClientRepository
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtDecoders
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
+import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders
+import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.server.WebFilter
 import java.net.URI
 
 
@@ -26,14 +29,18 @@ import java.net.URI
  * @author José A. Íñigo
  */
 @Configuration
-class OAuth2Config : WebSecurityConfigurerAdapter() {
+@EnableWebFluxSecurity
+class OAuth2Config {
 
     @Autowired
-    lateinit var oAuth2AuthorizedClientRepository: OAuth2AuthorizedClientRepository
+    lateinit var serverProperties: ServerProperties
+
+    @Autowired
+    lateinit var oAuth2AuthorizedClientRepository: ServerOAuth2AuthorizedClientRepository
 
     @Bean
     fun webClient(): WebClient {
-        val servletBearerExchangeFilterFunction = ServletBearerExchangeFilterFunction("resource-server-2",
+        val servletBearerExchangeFilterFunction = ServerBearerExchangeFilterFunction("resource-server-2",
                 oAuth2AuthorizedClientRepository)
         return WebClient.builder()
                 .filter(servletBearerExchangeFilterFunction)
@@ -41,13 +48,13 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
     }
 
     @Bean
-    fun clientRegistrationRepository(): ClientRegistrationRepository {
-        return InMemoryClientRegistrationRepository(keycloakClientRegistration())
+    fun clientRegistrationRepository(): ReactiveClientRegistrationRepository {
+        return InMemoryReactiveClientRegistrationRepository(keycloakClientRegistration())
     }
 
     @Bean
-    fun jwtDecoder(): JwtDecoder {
-        return JwtDecoders.fromIssuerLocation("http://localhost:8080/auth/realms/insight")
+    fun jwtDecoder(): ReactiveJwtDecoder {
+        return ReactiveJwtDecoders.fromIssuerLocation("http://localhost:8080/auth/realms/insight")
     }
 
     private fun keycloakClientRegistration(): ClientRegistration {
@@ -69,21 +76,42 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
                 .build()
     }
 
-    override fun configure(http: HttpSecurity) {
-        http.authorizeRequests { authorizeRequests ->
-            authorizeRequests
-                    .anyRequest().authenticated()
-        }.oauth2Login(Customizer.withDefaults())
+    @Bean
+    fun springSecurityFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain {
+        return http.authorizeExchange { exchanges ->
+            exchanges
+                    .anyExchange().authenticated()
+
+        }.oauth2Login(withDefaults())
                 .logout { logout ->
+                    logout.logoutUrl("/resource-server-2/logout")
                     logout.logoutSuccessHandler(oidcLogoutSuccessHandler())
                 }
-                .oauth2ResourceServer()
-                .jwt()
-                .decoder(jwtDecoder())
+                .oauth2ResourceServer { resourceServer ->
+                    resourceServer.jwt()
+                            .jwtDecoder(jwtDecoder())
+                }
+                .build()
     }
 
-    private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler? {
-        val oidcLogoutSuccessHandler = OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository())
+    @Bean
+    fun contextPathWebFilter(): WebFilter {
+        val contextPath = serverProperties.servlet.contextPath
+        return WebFilter { exchange, chain ->
+            val request = exchange.request
+            if (request.uri.path.startsWith(contextPath)) {
+                chain.filter(
+                        exchange.mutate()
+                                .request(request.mutate().contextPath(contextPath).build())
+                                .build())
+            } else {
+                chain.filter(exchange)
+            }
+        }
+    }
+
+    private fun oidcLogoutSuccessHandler(): ServerLogoutSuccessHandler? {
+        val oidcLogoutSuccessHandler = OidcClientInitiatedServerLogoutSuccessHandler(clientRegistrationRepository())
         oidcLogoutSuccessHandler.setPostLogoutRedirectUri(URI.create("http://localhost:8282/resource-server-2"))
         return oidcLogoutSuccessHandler
     }

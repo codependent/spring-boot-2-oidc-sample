@@ -8,7 +8,8 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.reactive.function.client.WebClient
-import javax.servlet.http.HttpSession
+import reactor.core.publisher.Mono
+
 
 /**
  * @author José A. Íñigo
@@ -17,20 +18,17 @@ import javax.servlet.http.HttpSession
 class HomeController(private val webClient: WebClient) {
 
     @GetMapping
-    fun home(httpSession: HttpSession,
-             @RegisteredOAuth2AuthorizedClient authorizedClient: OAuth2AuthorizedClient,
-             @AuthenticationPrincipal oauth2User: OAuth2User): String {
+    fun home(@RegisteredOAuth2AuthorizedClient authorizedClient: OAuth2AuthorizedClient,
+             @AuthenticationPrincipal oauth2User: OAuth2User): Mono<String> {
         val authentication = SecurityContextHolder.getContext().authentication
         println(authentication)
 
-        val pair = webClient.get().uri("http://localhost:8181/resource-server-1/rest/hello").retrieve()
+        return webClient.get().uri("http://localhost:8181/resource-server-1/rest/hello").retrieve()
                 .bodyToMono(Pair::class.java)
+                .onErrorResume { Mono.empty() }
+                .doOnNext { println(it) }
                 .doOnError { it.printStackTrace() }
-                .block()
-
-        println(pair)
-
-        return "home"
+                .map { "home" }
     }
 
 }
