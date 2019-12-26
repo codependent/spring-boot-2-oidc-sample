@@ -150,7 +150,7 @@ class OAuth2Config {
                 .build()
     }
 
-    private fun oidcLogoutSuccessHandler(): ServerLogoutSuccessHandler? {
+    private fun oidcLogoutSuccessHandler(): ServerLogoutSuccessHandler {
         val oidcLogoutSuccessHandler = OidcClientInitiatedServerLogoutSuccessHandler(clientRegistrationRepository())
         oidcLogoutSuccessHandler.setPostLogoutRedirectUri(URI.create("http://localhost:8282/resource-server-2"))
         return oidcLogoutSuccessHandler

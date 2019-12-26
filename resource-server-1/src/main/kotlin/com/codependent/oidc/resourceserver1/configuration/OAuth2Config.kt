@@ -26,10 +26,8 @@ import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtDecoders
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
-import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import org.springframework.web.reactive.function.client.WebClient
-import reactor.core.publisher.Mono
 import java.net.URI
 
 
@@ -131,7 +129,7 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
                 .build()
     }
 
-    private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler? {
+    private fun oidcLogoutSuccessHandler(): LogoutSuccessHandler {
         val oidcLogoutSuccessHandler = OidcClientInitiatedLogoutSuccessHandler(clientRegistrationRepository())
         oidcLogoutSuccessHandler.setPostLogoutRedirectUri(URI.create("http://localhost:8181/resource-server-1"))
         return oidcLogoutSuccessHandler
