@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono
  * @author José A. Íñigo
  */
 class ServerBearerExchangeFilterFunction(private val clientRegistrationId: String,
-                                         private val oAuth2AuthorizedClientRepository: ServerOAuth2AuthorizedClientRepository?) : ExchangeFilterFunction {
+                                         private val oAuth2AuthorizedClientRepository: ServerOAuth2AuthorizedClientRepository) : ExchangeFilterFunction {
 
     override fun filter(request: ClientRequest, next: ExchangeFunction): Mono<ClientResponse> {
         return oauth2Token()
@@ -29,7 +29,7 @@ class ServerBearerExchangeFilterFunction(private val clientRegistrationId: Strin
     private fun oauth2Token(): Mono<AbstractOAuth2Token> {
         return currentAuthentication()
                 .flatMap { authentication ->
-                    oAuth2AuthorizedClientRepository?.loadAuthorizedClient<OAuth2AuthorizedClient>(clientRegistrationId, authentication, null)?.map { it.accessToken }
+                    oAuth2AuthorizedClientRepository.loadAuthorizedClient<OAuth2AuthorizedClient>(clientRegistrationId, authentication, null)?.map { it.accessToken }
                 }
                 .filter { it != null }
                 .cast(AbstractOAuth2Token::class.java)
