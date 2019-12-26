@@ -3,6 +3,9 @@ server:
   servlet:
     context-path: /resource-server-2
 
+spring:
+  thymeleaf:
+    cache: false
 
 logging:
   level:

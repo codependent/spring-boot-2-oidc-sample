@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.core.publisher.Mono
 import javax.servlet.http.HttpSession
 
 /**
@@ -24,8 +25,10 @@ class HomeController(private val webClient: WebClient) {
         println(authentication)
         println(authorizedClient.accessToken.tokenValue)
 
-        val pair = webClient.get().uri("http://localhost:8282/resource-server-2/rest/hello").retrieve()
+        val pair = webClient.get().uri("http://localhost:8282/resource-server-2/rest/hello")
+                .retrieve()
                 .bodyToMono(Pair::class.java)
+                .onErrorResume { Mono.empty() }
                 .doOnError { it.printStackTrace() }
                 .block()
 
