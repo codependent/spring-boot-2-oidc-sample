@@ -83,11 +83,11 @@ class OAuth2Config {
                     logout.logoutSuccessHandler(oidcLogoutSuccessHandler())
                 }
                 .oauth2ResourceServer { resourceServer ->
-                    resourceServer.jwt()
-                            .jwtDecoder(jwtDecoder())
-                            .jwtAuthenticationConverter(grantedAuthoritiesExtractor())
-                }
-                .build()
+                    resourceServer.jwt { jwt ->
+                        jwt.jwtDecoder(jwtDecoder())
+                        jwt.jwtAuthenticationConverter(grantedAuthoritiesExtractor())
+                    }
+                }.build()
     }
 
     @Bean

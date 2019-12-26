@@ -67,13 +67,12 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
             val mappedAuthorities = mutableSetOf<GrantedAuthority>()
 
             authorities.forEach { authority ->
+                mappedAuthorities.add(SimpleGrantedAuthority(authority.authority))
                 if (authority is OidcUserAuthority) {
                     val oidcUserAuthority = authority
 
                     val idToken = oidcUserAuthority.idToken
                     val userInfo = oidcUserAuthority.userInfo
-
-                    mappedAuthorities.add(SimpleGrantedAuthority(authority.authority))
 
                     // Map the claims found in idToken and/or userInfo
                     // to one or more GrantedAuthority's and add it to mappedAuthorities
@@ -103,11 +102,12 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
                 .logout { logout ->
                     logout.logoutSuccessHandler(oidcLogoutSuccessHandler())
                 }
-                .oauth2ResourceServer()
-                .jwt()
-                .decoder(jwtDecoder())
-                .jwtAuthenticationConverter(grantedAuthoritiesExtractor())
-
+                .oauth2ResourceServer {oauth2ResourceServer ->
+                    oauth2ResourceServer.jwt { jwt ->
+                        jwt.decoder(jwtDecoder())
+                        jwt.jwtAuthenticationConverter(grantedAuthoritiesExtractor())
+                    }
+                }
     }
 
     private fun keycloakClientRegistration(): ClientRegistration {
