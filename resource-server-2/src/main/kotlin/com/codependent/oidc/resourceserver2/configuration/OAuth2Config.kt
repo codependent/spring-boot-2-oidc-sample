@@ -7,15 +7,12 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
 import org.springframework.security.authentication.AbstractAuthenticationToken
-import org.springframework.security.config.Customizer.withDefaults
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.GrantedAuthority
 import org.springframework.security.core.authority.SimpleGrantedAuthority
-import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcReactiveOAuth2UserService
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
 import org.springframework.security.oauth2.client.oidc.web.server.logout.OidcClientInitiatedServerLogoutSuccessHandler
 import org.springframework.security.oauth2.client.registration.ClientRegistration
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository
@@ -27,8 +24,6 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
-import org.springframework.security.oauth2.core.oidc.user.OidcUserAuthority
-import org.springframework.security.oauth2.core.user.OAuth2UserAuthority
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoders
@@ -113,21 +108,18 @@ class OAuth2Config {
     }
 
     @Bean
-    fun oidcUserService(): ReactiveOAuth2UserService<OidcUserRequest, OidcUser>  {
+    fun oidcUserService(): ReactiveOAuth2UserService<OidcUserRequest, OidcUser> {
         val delegate = OidcReactiveOAuth2UserService()
 
         return ReactiveOAuth2UserService { userRequest ->
             val oidcUser = delegate.loadUser(userRequest)
-                    .map {oidcUser ->
+                    .map { oidcUser ->
                         val accessToken = userRequest.accessToken
                         val mappedAuthorities = mutableSetOf<GrantedAuthority>()
+                        mappedAuthorities.addAll(oidcUser.authorities)
 
                         // 1) Fetch the authority information from the protected resource using accessToken
                         // 2) Map the authority information to one or more GrantedAuthority's and add it to mappedAuthorities
-
-                        oidcUser.authorities.forEach {
-                            mappedAuthorities.add(SimpleGrantedAuthority(it.authority))
-                        }
 
                         this.authorities[oidcUser.preferredUsername]?.forEach {
                             mappedAuthorities.add(SimpleGrantedAuthority("ROLE_$it"))
