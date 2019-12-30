@@ -1,6 +1,5 @@
 package com.codependent.oidc.resourceserver2.configuration
 
-import com.codependent.oidc.resourceserver2.client.ServerBearerExchangeFilterFunction
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.web.ServerProperties
 import org.springframework.context.annotation.Bean
@@ -19,7 +18,6 @@ import org.springframework.security.oauth2.client.registration.ClientRegistratio
 import org.springframework.security.oauth2.client.registration.InMemoryReactiveClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.ReactiveClientRegistrationRepository
 import org.springframework.security.oauth2.client.userinfo.ReactiveOAuth2UserService
-import org.springframework.security.oauth2.client.web.server.ServerOAuth2AuthorizedClientRepository
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
@@ -32,7 +30,6 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.security.web.server.authentication.logout.ServerLogoutSuccessHandler
-import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.server.WebFilter
 import reactor.core.publisher.Mono
 import java.net.URI
@@ -43,24 +40,12 @@ import java.net.URI
  */
 @Configuration
 @EnableWebFluxSecurity
-class OAuth2Config {
+class SecurityConfiguration {
 
     private val authorities = mapOf("codependent" to setOf("viewer-resource-server-2", "editor-resource-server-2"))
 
     @Autowired
     lateinit var serverProperties: ServerProperties
-
-    @Autowired
-    lateinit var oAuth2AuthorizedClientRepository: ServerOAuth2AuthorizedClientRepository
-
-    @Bean
-    fun webClient(): WebClient {
-        val servletBearerExchangeFilterFunction = ServerBearerExchangeFilterFunction("resource-server-2",
-                oAuth2AuthorizedClientRepository)
-        return WebClient.builder()
-                .filter(servletBearerExchangeFilterFunction)
-                .build()
-    }
 
     @Bean
     fun clientRegistrationRepository(): ReactiveClientRegistrationRepository {
@@ -87,7 +72,8 @@ class OAuth2Config {
                         jwt.jwtDecoder(jwtDecoder())
                         jwt.jwtAuthenticationConverter(grantedAuthoritiesExtractor())
                     }
-                }.build()
+                }.oauth2Client(withDefaults())
+                .build()
     }
 
     @Bean

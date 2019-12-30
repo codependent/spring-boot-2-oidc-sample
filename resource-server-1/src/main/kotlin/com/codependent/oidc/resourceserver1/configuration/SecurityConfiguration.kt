@@ -1,7 +1,5 @@
 package com.codependent.oidc.resourceserver1.configuration
 
-import com.codependent.oidc.resourceserver1.client.ServletBearerExchangeFilterFunction
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
@@ -14,9 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.authority.mapping.GrantedAuthoritiesMapper
 import org.springframework.security.oauth2.client.oidc.web.logout.OidcClientInitiatedLogoutSuccessHandler
 import org.springframework.security.oauth2.client.registration.ClientRegistration
-import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository
 import org.springframework.security.oauth2.core.AuthorizationGrantType
 import org.springframework.security.oauth2.core.ClientAuthenticationMethod
 import org.springframework.security.oauth2.core.oidc.IdTokenClaimNames
@@ -27,7 +23,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtDecoders
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
-import org.springframework.web.reactive.function.client.WebClient
 import java.net.URI
 
 
@@ -35,31 +30,15 @@ import java.net.URI
  * @author José A. Íñigo
  */
 @Configuration
-class OAuth2Config : WebSecurityConfigurerAdapter() {
+class SecurityConfiguration : WebSecurityConfigurerAdapter() {
 
     private val authorities = mapOf("codependent" to setOf("viewer-resource-server-1", "editor-resource-server-1"))
 
-    @Autowired
-    lateinit var oAuth2AuthorizedClientRepository: OAuth2AuthorizedClientRepository
+    @Bean
+    fun clientRegistrationRepository() = InMemoryClientRegistrationRepository(keycloakClientRegistration())
 
     @Bean
-    fun webClient(): WebClient {
-        val servletBearerExchangeFilterFunction = ServletBearerExchangeFilterFunction("resource-server-1",
-                oAuth2AuthorizedClientRepository)
-        return WebClient.builder()
-                .filter(servletBearerExchangeFilterFunction)
-                .build()
-    }
-
-    @Bean
-    fun clientRegistrationRepository(): ClientRegistrationRepository {
-        return InMemoryClientRegistrationRepository(keycloakClientRegistration())
-    }
-
-    @Bean
-    fun jwtDecoder(): JwtDecoder {
-        return JwtDecoders.fromIssuerLocation("http://localhost:8080/auth/realms/insight")
-    }
+    fun jwtDecoder(): JwtDecoder = JwtDecoders.fromIssuerLocation("http://localhost:8080/auth/realms/insight")
 
     @Bean
     fun userAuthoritiesMapper(): GrantedAuthoritiesMapper {
@@ -102,12 +81,13 @@ class OAuth2Config : WebSecurityConfigurerAdapter() {
                 .logout { logout ->
                     logout.logoutSuccessHandler(oidcLogoutSuccessHandler())
                 }
-                .oauth2ResourceServer {oauth2ResourceServer ->
+                .oauth2ResourceServer { oauth2ResourceServer ->
                     oauth2ResourceServer.jwt { jwt ->
                         jwt.decoder(jwtDecoder())
                         jwt.jwtAuthenticationConverter(grantedAuthoritiesExtractor())
                     }
                 }
+                .oauth2Client(withDefaults())
     }
 
     private fun keycloakClientRegistration(): ClientRegistration {

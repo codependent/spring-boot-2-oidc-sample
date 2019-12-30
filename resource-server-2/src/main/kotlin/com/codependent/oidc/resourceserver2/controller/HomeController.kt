@@ -4,6 +4,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient
+import org.springframework.security.oauth2.client.web.reactive.function.client.ServerOAuth2AuthorizedClientExchangeFilterFunction.oauth2AuthorizedClient
 import org.springframework.security.oauth2.core.user.OAuth2User
 import org.springframework.stereotype.Controller
 import org.springframework.web.bind.annotation.GetMapping
@@ -24,7 +25,9 @@ class HomeController(private val webClient: WebClient) {
                 .doOnNext {
                     println(it.authentication)
                 }.flatMap {
-                    webClient.get().uri("http://localhost:8181/resource-server-1/rest/hello").retrieve()
+                    webClient.get().uri("http://localhost:8181/resource-server-1/rest/hello")
+                            .attributes(oauth2AuthorizedClient(authorizedClient))
+                            .retrieve()
                             .bodyToMono(Pair::class.java)
                             .onErrorResume { Mono.empty() }
                             .doOnNext { println(it) }
